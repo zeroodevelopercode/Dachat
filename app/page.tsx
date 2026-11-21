@@ -71,7 +71,7 @@ export default function Home() {
     event.preventDefault();
     setAuthError('');
     if (!/^\d{6}$/.test(otp.trim())) {
-      setAuthError('Masukkan kode 6 digit yang dikirim ke WhatsApp.');
+      setAuthError('Masukkan kode 6 digit yang dikirim melalui SMS.');
       return;
     }
     setAuthBusy(true);
