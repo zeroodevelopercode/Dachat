@@ -41,21 +41,21 @@ export default function Home() {
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
 
-  async function requestWhatsAppOtp(event: React.FormEvent<HTMLFormElement>) {
+  async function requestSmsOtp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setAuthError('');
     const raw = phone.trim().replace(/[\s()-]/g, '');
     const digits = raw.replace(/[^0-9]/g, '');
     const normalized = raw.startsWith('+') ? '+' + digits : digits.startsWith('0') ? '+62' + digits.slice(1) : digits.startsWith('62') ? '+' + digits : '+62' + digits;
     if (!/^\+[1-9]\d{7,14}$/.test(normalized)) {
-      setAuthError('Nomor HP belum valid. Masukkan nomor WhatsApp aktif.');
+      setAuthError('Nomor HP belum valid. Masukkan nomor HP yang bisa menerima SMS.');
       return;
     }
     setAuthBusy(true);
     try {
       const { error } = await supabase.auth.signInWithOtp({
         phone: normalized,
-        options: { channel: 'whatsapp' },
+        
       });
       if (error) throw error;
       setPendingPhone(normalized);
@@ -67,7 +67,7 @@ export default function Home() {
     }
   }
 
-  async function verifyWhatsAppOtp(event: React.FormEvent<HTMLFormElement>) {
+  async function verifySmsOtp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setAuthError('');
     if (!/^\d{6}$/.test(otp.trim())) {
@@ -181,16 +181,16 @@ export default function Home() {
         <section className="auth-card">
           <div className="auth-brand"><span className="landing-logo"><MessageCircle size={25} strokeWidth={2.8} /></span><strong>DaChat</strong></div>
           <span className="auth-eyebrow">AKUN DACHAT</span>
-          <h1>{otpSent ? 'Cek WhatsApp kamu.' : 'Selamat datang.'}</h1>
-          <p className="auth-description">{otpSent ? `Kode verifikasi 6 digit dikirim ke ${pendingPhone}. Masukkan kode untuk melanjutkan.` : 'Masuk atau buat akun menggunakan nomor WhatsApp aktif.'}</p>
+          <h1>{otpSent ? 'Cek SMS kamu.' : 'Selamat datang.'}</h1>
+          <p className="auth-description">{otpSent ? `Kode verifikasi 6 digit dikirim melalui SMS ke ${pendingPhone}. Masukkan kode untuk melanjutkan.` : 'Masuk atau buat akun menggunakan nomor HP yang bisa menerima SMS.'}</p>
           {!otpSent ? (
-            <form className="auth-form" onSubmit={requestWhatsAppOtp}>
-              <label htmlFor="dachat-phone">Nomor WhatsApp</label>
+            <form className="auth-form" onSubmit={requestSmsOtp}>
+              <label htmlFor="dachat-phone">Nomor HP</label>
               <div className="auth-input-wrap"><span>+62</span><input id="dachat-phone" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="81234567890" required /></div>
-              <button className="auth-submit" type="submit" disabled={authBusy}>{authBusy ? 'Mengirim kode...' : 'Kirim kode WhatsApp'} <Send size={17}/></button>
+              <button className="auth-submit" type="submit" disabled={authBusy}>{authBusy ? 'Mengirim kode...' : 'Kirim kode SMS'} <Send size={17}/></button>
             </form>
           ) : (
-            <form className="auth-form" onSubmit={verifyWhatsAppOtp}>
+            <form className="auth-form" onSubmit={verifySmsOtp}>
               <label htmlFor="dachat-otp">Kode verifikasi</label>
               <input className="auth-otp-input" id="dachat-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="••••••" required />
               <button className="auth-submit" type="submit" disabled={authBusy}>{authBusy ? 'Memverifikasi...' : 'Verifikasi & Masuk'} <Check size={17}/></button>
