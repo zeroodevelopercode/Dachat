@@ -106,6 +106,10 @@ export default function Home() {
   const [updateInfo, setUpdateInfo] = useState<{ versionName: string; versionCode: number; downloadUrl: string; releaseNotes: string[] } | null>(null);
   const [checking, setChecking] = useState(false);
   const [mobileChat, setMobileChat] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [whatsAppPhone, setWhatsAppPhone] = useState('');
+  const [whatsAppMessage, setWhatsAppMessage] = useState('');
+  const [whatsAppError, setWhatsAppError] = useState('');
 
   const activeChat = chats.find(c => c.id === activeId) ?? chats[0];
   const filtered = useMemo(() => chats.filter(c => c.name.toLowerCase().includes(query.toLowerCase()) && (tab === 'all' || c.unread > 0)), [chats, query, tab]);
@@ -122,6 +126,29 @@ export default function Home() {
       setUpdateInfo(null);
       setShowUpdate(true);
     } finally { setChecking(false); }
+  }
+
+  function openWhatsAppChat(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setWhatsAppError('');
+    const raw = whatsAppPhone.trim().replace(/[^0-9+]/g, '');
+    let number = raw.replace(/\D/g, '');
+    if (raw.startsWith('+')) {
+      // International number: keep country code and digits.
+    } else if (number.startsWith('0')) {
+      number = '62' + number.slice(1);
+    } else if (number.startsWith('8')) {
+      number = '62' + number;
+    }
+    if (!/^\d{8,15}$/.test(number)) {
+      setWhatsAppError('Nomor WhatsApp belum valid. Gunakan kode negara, misalnya 6281234567890.');
+      return;
+    }
+    const url = `https://wa.me/${number}${whatsAppMessage.trim() ? `?text=${encodeURIComponent(whatsAppMessage.trim())}` : ''}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setShowWhatsAppModal(false);
+    setWhatsAppPhone('');
+    setWhatsAppMessage('');
   }
 
   function sendMessage() {
@@ -210,7 +237,7 @@ export default function Home() {
       <aside className={`sidebar ${mobileChat ? 'sidebar-hidden' : ''}`}>
         <div className="brand-row"><div className="brand-mark"><MessageCircle size={23} fill="currentColor" /></div><span>DaChat</span><button className="icon-button brand-more" aria-label="Menu"><MoreHorizontal /></button></div>
         <div className="profile-strip"><div className="avatar avatar-self">Z</div><div className="profile-copy"><strong>{authPhone ?? 'Pengguna DaChat'}</strong><span>Siap terhubung</span></div><button className="icon-button" onClick={checkUpdate} aria-label="Periksa update"><Download size={18}/></button><button className="icon-button" onClick={signOut} aria-label="Keluar dari akun" title="Keluar"><LogOut size={18}/></button></div>
-        <div className="sidebar-heading"><div><h1>Pesan</h1><p>Obrolan kamu, satu tempat.</p></div><button className="new-chat" aria-label="Chat baru"><CirclePlus size={20}/></button></div>
+        <div className="sidebar-heading"><div><h1>Pesan</h1><p>Obrolan kamu, satu tempat.</p></div><button className="new-chat" aria-label="Chat baru" title="Chat nomor WhatsApp" onClick={() => { setWhatsAppError(''); setShowWhatsAppModal(true); }}><CirclePlus size={20}/></button></div>
         <label className="search-box"><Search size={17}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Cari percakapan..." /></label>
         <div className="filter-tabs"><button className={tab === 'all' ? 'selected' : ''} onClick={() => setTab('all')}>Semua</button><button className={tab === 'unread' ? 'selected' : ''} onClick={() => setTab('unread')}>Belum dibaca</button></div>
         <div className="chat-list">{filtered.map(chat => <button key={chat.id} className={`chat-item ${activeId === chat.id ? 'active' : ''}`} onClick={() => { setActiveId(chat.id); setMobileChat(true); }}><div className={`avatar avatar-${chat.color}`}>{chat.initials}{chat.online && <i/>}</div><div className="chat-meta"><div className="chat-top"><strong>{chat.name}</strong><time>{chat.time}</time></div><div className="chat-bottom"><span>{chat.message}</span>{chat.unread > 0 && <b>{chat.unread}</b>}</div></div></button>)}</div>
@@ -225,6 +252,7 @@ export default function Home() {
 
       <aside className="details-panel"><div className="details-top"><span>DETAIL</span><button className="icon-button" onClick={checkUpdate} aria-label="Cek versi"><MoreHorizontal/></button></div><div className="detail-card"><div className={`avatar avatar-large avatar-${activeChat.color}`}>{activeChat.initials}</div><h2>{activeChat.name}</h2><p>{activeChat.online ? 'Online sekarang' : 'Kontak DaChat'}</p><div className="detail-actions"><button><MessageCircle size={17}/><span>Pesan</span></button><button><Bell size={17}/><span>Notifikasi</span></button></div></div><div className="detail-section"><h3>Info kontak</h3><div className="info-line"><span>Nama</span><strong>{activeChat.name}</strong></div><div className="info-line"><span>Status</span><strong>{activeChat.online ? 'Online' : 'Tersedia'}</strong></div></div><div className="promo-card"><div className="promo-icon"><Sparkles size={19}/></div><strong>DaChat, lebih dekat.</strong><p>Tempat baru untuk obrolan yang berarti.</p><button onClick={checkUpdate}>Periksa pembaruan <Download size={14}/></button></div></aside>
 
+      {showWhatsAppModal && <div className="modal-backdrop" onClick={() => setShowWhatsAppModal(false)}><section className="update-modal" onClick={e => e.stopPropagation()}><button className="modal-close icon-button" onClick={() => setShowWhatsAppModal(false)} aria-label="Tutup"><X/></button><div className="update-icon"><MessageCircle size={25}/></div><h2>Chat nomor WhatsApp</h2><p>Masukkan nomor WhatsApp asli. DaChat akan membuka aplikasi WhatsApp dengan percakapan dan pesan awal yang kamu tulis.</p><form className="auth-form" onSubmit={openWhatsAppChat}><label htmlFor="wa-phone">Nomor WhatsApp</label><input id="wa-phone" type="tel" inputMode="tel" value={whatsAppPhone} onChange={e => setWhatsAppPhone(e.target.value)} placeholder="081234567890 atau 6281234567890" required/><label htmlFor="wa-message">Pesan awal (opsional)</label><textarea id="wa-message" value={whatsAppMessage} onChange={e => setWhatsAppMessage(e.target.value)} placeholder="Halo, apa kabar?" rows={3}/>{whatsAppError && <p className="auth-error" role="alert">{whatsAppError}</p>}<button className="auth-submit" type="submit">Buka WhatsApp <Send size={17}/></button></form><p className="muted">Balasan akan masuk ke WhatsApp, bukan otomatis tersimpan di chat DaChat. Fitur ini menggunakan aplikasi WhatsApp milikmu dan tidak memerlukan API berbayar.</p></section></div>}
       {showUpdate && <div className="modal-backdrop" onClick={() => setShowUpdate(false)}><section className="update-modal" onClick={e => e.stopPropagation()}><button className="modal-close icon-button" onClick={() => setShowUpdate(false)}><X/></button><div className="update-icon"><Download size={25}/></div><h2>Pembaruan DaChat</h2>{checking ? <p>Memeriksa versi terbaru...</p> : updateInfo ? <><p>Versi tersedia: <strong>{updateInfo.versionName}</strong> (build {updateInfo.versionCode})</p><ul>{updateInfo.releaseNotes.map(note => <li key={note}>{note}</li>)}</ul>{updateInfo.downloadUrl ? <a className="download-link" href={updateInfo.downloadUrl}><Download size={16}/> Unduh APK terbaru</a> : <p className="muted">Belum ada APK rilis. Tautan update akan aktif setelah build Android dipublikasikan.</p>}</> : <p>Tidak dapat memeriksa versi. Pastikan kamu terhubung ke internet.</p>}<button className="modal-done" onClick={() => setShowUpdate(false)}>Mengerti</button></section></div>}
       <div className="mobile-bottom"><button><MessageCircle/><span>Chat</span></button><button><Users/><span>Kontak</span></button><button onClick={checkUpdate}><Download/><span>Update</span></button><button><Settings/><span>Setelan</span></button></div>
     </main>
