@@ -1,0 +1,11 @@
+{
+  "appName": "DaChat",
+  "versionName": "0.1.0",
+  "versionCode": 1,
+  "minimumVersionCode": 1,
+  "downloadUrl": "",
+  "releaseNotes": [
+    "Rilis fondasi awal DaChat",
+    "Web dan Android memakai basis kode yang sama"
+  ]
+}

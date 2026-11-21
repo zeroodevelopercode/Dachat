@@ -30,7 +30,7 @@ export default function Home() {
   async function checkUpdate() {
     setChecking(true);
     try {
-      const res = await fetch('/api/version', { cache: 'no-store' });
+      const res = await fetch('/version.json', { cache: 'no-store' });
       if (!res.ok) throw new Error('Gagal memeriksa versi');
       const info = await res.json();
       setUpdateInfo(info);
