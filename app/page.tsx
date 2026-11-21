@@ -14,6 +14,7 @@ const initialChats: Chat[] = [
 ];
 
 export default function Home() {
+  const [showApp, setShowApp] = useState(false);
   const [chats, setChats] = useState(initialChats);
   const [activeId, setActiveId] = useState(1);
   const [query, setQuery] = useState('');
@@ -47,6 +48,46 @@ export default function Home() {
     const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
     setChats(old => old.map(c => c.id === activeId ? { ...c, message: text, time: now, messages: [...c.messages, { from: 'me', text, time: now }] } : c));
     setDraft('');
+  }
+
+  if (!showApp) {
+    return (
+      <main className="landing-screen">
+        <header className="landing-header">
+          <a className="landing-brand" href="/" aria-label="DaChat beranda">
+            <span className="landing-logo"><MessageCircle size={27} strokeWidth={2.8} /></span>
+            <span>DaChat</span>
+          </a>
+          <span className="landing-version">RUANG OBROLAN BARU</span>
+        </header>
+
+        <section className="landing-hero">
+          <div className="landing-art" aria-hidden="true">
+            <span className="art-ring art-ring-one" />
+            <span className="art-ring art-ring-two" />
+            <div className="art-bubble art-bubble-main"><MessageCircle size={76} strokeWidth={1.8} /></div>
+            <div className="art-bubble art-bubble-small"><MessageCircle size={29} strokeWidth={2.2} /></div>
+            <span className="art-dot art-dot-one" />
+            <span className="art-dot art-dot-two" />
+          </div>
+          <div className="landing-copy">
+            <span className="landing-eyebrow"><span /> SELAMAT DATANG DI DACHAT</span>
+            <h1>Obrolan jadi<br /><em>lebih dekat.</em></h1>
+            <p>Tempat untuk terhubung, berbagi cerita, dan menjaga percakapan tetap berjalan. Sederhana, nyaman, dan dibuat untukmu.</p>
+            <button className="landing-cta" onClick={() => setShowApp(true)}>
+              Mulai Sekarang <span><Send size={17} /></span>
+            </button>
+            <div className="landing-note"><ShieldCheck size={16} /> Dibuat untuk percakapan yang berarti</div>
+          </div>
+        </section>
+
+        <footer className="landing-footer">
+          <span><b>DaChat</b> © 2026</span>
+          <span className="landing-footer-center">SIMPLE. CONNECTED. CLOSER.</span>
+          <span className="landing-status"><i /> TERHUBUNG</span>
+        </footer>
+      </main>
+    );
   }
 
   return (
