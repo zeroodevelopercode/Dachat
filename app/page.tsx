@@ -44,10 +44,10 @@ export default function Home() {
   async function requestWhatsAppOtp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setAuthError('');
-    const raw = phone.trim().replace(/[\\s()-]/g, '');
+    const raw = phone.trim().replace(/[\s()-]/g, '');
     const digits = raw.replace(/[^0-9]/g, '');
     const normalized = raw.startsWith('+') ? '+' + digits : digits.startsWith('0') ? '+62' + digits.slice(1) : digits.startsWith('62') ? '+' + digits : '+62' + digits;
-    if (!/^\\+[1-9]\\d{7,14}$/.test(normalized)) {
+    if (!/^\+[1-9]\d{7,14}$/.test(normalized)) {
       setAuthError('Nomor HP belum valid. Masukkan nomor WhatsApp aktif.');
       return;
     }
@@ -70,7 +70,7 @@ export default function Home() {
   async function verifyWhatsAppOtp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setAuthError('');
-    if (!/^\\d{6}$/.test(otp.trim())) {
+    if (!/^\d{6}$/.test(otp.trim())) {
       setAuthError('Masukkan kode 6 digit yang dikirim ke WhatsApp.');
       return;
     }
@@ -192,7 +192,7 @@ export default function Home() {
           ) : (
             <form className="auth-form" onSubmit={verifyWhatsAppOtp}>
               <label htmlFor="dachat-otp">Kode verifikasi</label>
-              <input className="auth-otp-input" id="dachat-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={e => setOtp(e.target.value.replace(/\\D/g, '').slice(0, 6))} placeholder="••••••" required />
+              <input className="auth-otp-input" id="dachat-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="••••••" required />
               <button className="auth-submit" type="submit" disabled={authBusy}>{authBusy ? 'Memverifikasi...' : 'Verifikasi & Masuk'} <Check size={17}/></button>
               <button className="auth-secondary" type="button" onClick={() => { setOtpSent(false); setOtp(''); setAuthError(''); }}>Ganti nomor</button>
             </form>
