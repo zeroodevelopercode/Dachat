@@ -41,27 +41,17 @@ export default function Home() {
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
 
-  async function requestSmsOtp(event: React.FormEvent<HTMLFormElement>) {
+  async function signInAsGuest(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setAuthError('');
-    const raw = phone.trim().replace(/[\s()-]/g, '');
-    const digits = raw.replace(/[^0-9]/g, '');
-    const normalized = raw.startsWith('+') ? '+' + digits : digits.startsWith('0') ? '+62' + digits.slice(1) : digits.startsWith('62') ? '+' + digits : '+62' + digits;
-    if (!/^\+[1-9]\d{7,14}$/.test(normalized)) {
-      setAuthError('Nomor HP belum valid. Masukkan nomor HP yang bisa menerima SMS.');
-      return;
-    }
     setAuthBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: normalized,
-        
+      const { error } = await supabase.auth.signInAnonymously({
+        options: { data: { display_name: 'Pengguna DaChat' } },
       });
       if (error) throw error;
-      setPendingPhone(normalized);
-      setOtpSent(true);
     } catch (error) {
-      setAuthError(error instanceof Error ? error.message : 'Gagal mengirim kode. Coba lagi nanti.');
+      setAuthError(error instanceof Error ? error.message : 'Mode tamu belum aktif. Periksa pengaturan Supabase.');
     } finally {
       setAuthBusy(false);
     }
@@ -207,23 +197,12 @@ export default function Home() {
         <button className="auth-back" onClick={() => { setShowLogin(false); setOtpSent(false); setAuthError(''); }}>← Kembali</button>
         <section className="auth-card">
           <div className="auth-brand"><span className="landing-logo"><MessageCircle size={25} strokeWidth={2.8} /></span><strong>DaChat</strong></div>
-          <span className="auth-eyebrow">AKUN DACHAT</span>
-          <h1>{otpSent ? 'Cek SMS kamu.' : 'Selamat datang.'}</h1>
-          <p className="auth-description">{otpSent ? `Kode verifikasi 6 digit dikirim melalui SMS ke ${pendingPhone}. Masukkan kode untuk melanjutkan.` : 'Masuk atau buat akun menggunakan nomor HP yang bisa menerima SMS.'}</p>
-          {!otpSent ? (
-            <form className="auth-form" onSubmit={requestSmsOtp}>
-              <label htmlFor="dachat-phone">Nomor HP</label>
-              <div className="auth-input-wrap"><span>+62</span><input id="dachat-phone" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="81234567890" required /></div>
-              <button className="auth-submit" type="submit" disabled={authBusy}>{authBusy ? 'Mengirim kode...' : 'Kirim kode SMS'} <Send size={17}/></button>
-            </form>
-          ) : (
-            <form className="auth-form" onSubmit={verifySmsOtp}>
-              <label htmlFor="dachat-otp">Kode verifikasi</label>
-              <input className="auth-otp-input" id="dachat-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="••••••" required />
-              <button className="auth-submit" type="submit" disabled={authBusy}>{authBusy ? 'Memverifikasi...' : 'Verifikasi & Masuk'} <Check size={17}/></button>
-              <button className="auth-secondary" type="button" onClick={() => { setOtpSent(false); setOtp(''); setAuthError(''); }}>Ganti nomor</button>
-            </form>
-          )}
+          <span className="auth-eyebrow">AKUN DACHAT · MODE PENGEMBANGAN</span>
+          <h1>Masuk tanpa OTP.</h1>
+          <p className="auth-description">Gunakan akun tamu untuk mencoba DaChat tanpa SMS dan tanpa biaya. Akun tamu belum terhubung ke nomor HP asli.</p>
+          <form className="auth-form" onSubmit={signInAsGuest}>
+            <button className="auth-submit" type="submit" disabled={authBusy}>{authBusy ? "Menyiapkan akun..." : "Masuk sebagai Tamu"} <Send size={17}/></button>
+          </form>
           {authError && <p className="auth-error" role="alert">{authError}</p>}
           <p className="auth-footnote"><ShieldCheck size={14}/> Kode hanya untuk verifikasi akun DaChat. Jangan bagikan kode kepada siapa pun.</p>
         </section>
