@@ -130,3 +130,27 @@ html, body, #__next, .landing-screen, .app-shell,
     transition: none;
   }
 }
+
+
+/* DaChat phone + WhatsApp OTP authentication */
+.auth-screen{min-height:100dvh;background:#080808;color:#f7f7f2;display:grid;place-items:center;padding:28px 20px;position:relative}
+.auth-back{position:absolute;left:7.2%;top:30px;border:0;background:transparent;color:#aaa;padding:10px 0;font-size:12px}
+.auth-card{width:min(100%,430px);border:1px solid #2a2a2a;border-radius:22px;background:#111;padding:34px;box-shadow:0 20px 70px #0008}
+.auth-brand{display:flex;align-items:center;gap:11px;font:800 22px Manrope,sans-serif;margin-bottom:40px}
+.auth-brand .landing-logo{width:40px;height:40px}
+.auth-eyebrow{font-size:9px;letter-spacing:2px;color:#d8bd00;font-weight:800}
+.auth-card h1{font:800 34px/1.1 Manrope,sans-serif;letter-spacing:-1.5px;margin:13px 0}
+.auth-description{font-size:13px;line-height:1.7;color:#aaa;margin:0 0 27px;overflow-wrap:anywhere}
+.auth-form{display:flex;flex-direction:column;gap:11px}
+.auth-form label{font-size:11px;font-weight:700;color:#ddd}
+.auth-input-wrap{height:52px;border:1px solid #393939;border-radius:11px;background:#090909;display:flex;align-items:center;padding:0 14px;gap:11px}
+.auth-input-wrap>span{font-size:13px;font-weight:700;color:#ffd600;border-right:1px solid #333;padding-right:12px}
+.auth-input-wrap input,.auth-otp-input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#fff;font-size:14px}
+.auth-otp-input{height:58px;border:1px solid #393939;border-radius:11px;background:#090909;padding:0 15px;font-size:25px;letter-spacing:10px;text-align:center}
+.auth-submit{height:51px;border:0;border-radius:11px;background:#ffd600;color:#080808;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:12px;margin-top:7px}
+.auth-submit:disabled{opacity:.6;cursor:wait}
+.auth-secondary{border:1px solid #333;background:#191919;color:#ddd;border-radius:10px;height:43px;font-size:11px}
+.auth-error{font-size:11px;line-height:1.5;color:#ff9b8e;background:#321915;border:1px solid #5a2a22;border-radius:9px;padding:10px 12px;overflow-wrap:anywhere}
+.auth-footnote{display:flex;align-items:flex-start;gap:8px;color:#777;font-size:10px;line-height:1.6;margin:23px 0 0}
+.auth-footnote svg{color:#ffd600;flex:none;margin-top:1px}
+@media(max-width:520px){.auth-back{left:22px;top:16px}.auth-card{padding:27px 22px}.auth-brand{margin-bottom:32px}.auth-card h1{font-size:30px}}
