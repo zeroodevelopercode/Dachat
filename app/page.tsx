@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Bell, Check, CheckCheck, ChevronDown, CirclePlus, Download, MessageCircle, MoreHorizontal, Paperclip, Phone, Search, Send, Settings, ShieldCheck, Smile, Sparkles, Users, Video, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Bell, Check, CheckCheck, ChevronDown, CirclePlus, Download, MessageCircle, LogOut, MoreHorizontal, Paperclip, Phone, Search, Send, Settings, ShieldCheck, Smile, Sparkles, Users, Video, X } from 'lucide-react';
 
 type Chat = { id: number; name: string; initials: string; color: string; message: string; time: string; unread: number; online?: boolean; messages: { from: 'them' | 'me'; text: string; time: string }[] };
 
@@ -15,6 +16,87 @@ const initialChats: Chat[] = [
 
 export default function Home() {
   const [showApp, setShowApp] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [pendingPhone, setPendingPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [authPhone, setAuthPhone] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setAuthPhone(data.session?.user.phone ?? null);
+      setShowApp(Boolean(data.session));
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setAuthPhone(session?.user.phone ?? null);
+      setShowApp(Boolean(session));
+      if (session) setShowLogin(false);
+    });
+    return () => { mounted = false; subscription.unsubscribe(); };
+  }, []);
+
+  async function requestWhatsAppOtp(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAuthError('');
+    const raw = phone.trim().replace(/[\\s()-]/g, '');
+    const digits = raw.replace(/[^0-9]/g, '');
+    const normalized = raw.startsWith('+') ? '+' + digits : digits.startsWith('0') ? '+62' + digits.slice(1) : digits.startsWith('62') ? '+' + digits : '+62' + digits;
+    if (!/^\\+[1-9]\\d{7,14}$/.test(normalized)) {
+      setAuthError('Nomor HP belum valid. Masukkan nomor WhatsApp aktif.');
+      return;
+    }
+    setAuthBusy(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: normalized,
+        options: { channel: 'whatsapp' },
+      });
+      if (error) throw error;
+      setPendingPhone(normalized);
+      setOtpSent(true);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Gagal mengirim kode. Coba lagi nanti.');
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function verifyWhatsAppOtp(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAuthError('');
+    if (!/^\\d{6}$/.test(otp.trim())) {
+      setAuthError('Masukkan kode 6 digit yang dikirim ke WhatsApp.');
+      return;
+    }
+    setAuthBusy(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        phone: pendingPhone,
+        token: otp.trim(),
+        type: 'sms',
+      });
+      if (error) throw error;
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Kode tidak valid atau sudah kedaluwarsa.');
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    setShowApp(false);
+    setShowLogin(false);
+    setOtpSent(false);
+    setOtp('');
+    setPhone('');
+  }
   const [chats, setChats] = useState(initialChats);
   const [activeId, setActiveId] = useState(1);
   const [query, setQuery] = useState('');
@@ -50,7 +132,7 @@ export default function Home() {
     setDraft('');
   }
 
-  if (!showApp) {
+  if (!showApp && !showLogin) {
     return (
       <main className="landing-screen">
         <header className="landing-header">
@@ -74,7 +156,7 @@ export default function Home() {
             <span className="landing-eyebrow"><span /> SELAMAT DATANG DI DACHAT</span>
             <h1>Obrolan jadi<br /><em>lebih dekat.</em></h1>
             <p>Tempat untuk terhubung, berbagi cerita, dan menjaga percakapan tetap berjalan. Sederhana, nyaman, dan dibuat untukmu.</p>
-            <button className="landing-cta" onClick={() => setShowApp(true)}>
+            <button className="landing-cta" onClick={() => { setAuthError(''); setShowLogin(true); }}>
               Mulai Sekarang <span><Send size={17} /></span>
             </button>
             <div className="landing-note"><ShieldCheck size={16} /> Dibuat untuk percakapan yang berarti</div>
@@ -90,11 +172,44 @@ export default function Home() {
     );
   }
 
+
+
+  if (!showApp && showLogin) {
+    return (
+      <main className="auth-screen">
+        <button className="auth-back" onClick={() => { setShowLogin(false); setOtpSent(false); setAuthError(''); }}>← Kembali</button>
+        <section className="auth-card">
+          <div className="auth-brand"><span className="landing-logo"><MessageCircle size={25} strokeWidth={2.8} /></span><strong>DaChat</strong></div>
+          <span className="auth-eyebrow">AKUN DACHAT</span>
+          <h1>{otpSent ? 'Cek WhatsApp kamu.' : 'Selamat datang.'}</h1>
+          <p className="auth-description">{otpSent ? `Kode verifikasi 6 digit dikirim ke ${pendingPhone}. Masukkan kode untuk melanjutkan.` : 'Masuk atau buat akun menggunakan nomor WhatsApp aktif.'}</p>
+          {!otpSent ? (
+            <form className="auth-form" onSubmit={requestWhatsAppOtp}>
+              <label htmlFor="dachat-phone">Nomor WhatsApp</label>
+              <div className="auth-input-wrap"><span>+62</span><input id="dachat-phone" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="81234567890" required /></div>
+              <button className="auth-submit" type="submit" disabled={authBusy}>{authBusy ? 'Mengirim kode...' : 'Kirim kode WhatsApp'} <Send size={17}/></button>
+            </form>
+          ) : (
+            <form className="auth-form" onSubmit={verifyWhatsAppOtp}>
+              <label htmlFor="dachat-otp">Kode verifikasi</label>
+              <input className="auth-otp-input" id="dachat-otp" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={e => setOtp(e.target.value.replace(/\\D/g, '').slice(0, 6))} placeholder="••••••" required />
+              <button className="auth-submit" type="submit" disabled={authBusy}>{authBusy ? 'Memverifikasi...' : 'Verifikasi & Masuk'} <Check size={17}/></button>
+              <button className="auth-secondary" type="button" onClick={() => { setOtpSent(false); setOtp(''); setAuthError(''); }}>Ganti nomor</button>
+            </form>
+          )}
+          {authError && <p className="auth-error" role="alert">{authError}</p>}
+          <p className="auth-footnote"><ShieldCheck size={14}/> Kode hanya untuk verifikasi akun DaChat. Jangan bagikan kode kepada siapa pun.</p>
+        </section>
+      </main>
+    );
+  }
+
+
   return (
     <main className="app-shell">
       <aside className={`sidebar ${mobileChat ? 'sidebar-hidden' : ''}`}>
         <div className="brand-row"><div className="brand-mark"><MessageCircle size={23} fill="currentColor" /></div><span>DaChat</span><button className="icon-button brand-more" aria-label="Menu"><MoreHorizontal /></button></div>
-        <div className="profile-strip"><div className="avatar avatar-self">Z</div><div className="profile-copy"><strong>Zero Developer</strong><span>Siap terhubung</span></div><button className="icon-button" onClick={checkUpdate} aria-label="Periksa update"><Download size={18}/></button><button className="icon-button" aria-label="Pengaturan"><Settings size={18}/></button></div>
+        <div className="profile-strip"><div className="avatar avatar-self">Z</div><div className="profile-copy"><strong>{authPhone ?? 'Pengguna DaChat'}</strong><span>Siap terhubung</span></div><button className="icon-button" onClick={checkUpdate} aria-label="Periksa update"><Download size={18}/></button><button className="icon-button" onClick={signOut} aria-label="Keluar dari akun" title="Keluar"><LogOut size={18}/></button></div>
         <div className="sidebar-heading"><div><h1>Pesan</h1><p>Obrolan kamu, satu tempat.</p></div><button className="new-chat" aria-label="Chat baru"><CirclePlus size={20}/></button></div>
         <label className="search-box"><Search size={17}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Cari percakapan..." /></label>
         <div className="filter-tabs"><button className={tab === 'all' ? 'selected' : ''} onClick={() => setTab('all')}>Semua</button><button className={tab === 'unread' ? 'selected' : ''} onClick={() => setTab('unread')}>Belum dibaca</button></div>
