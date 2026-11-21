@@ -91,3 +91,42 @@ html,body{background:#080808;color:#f7f7f2}
  .landing-footer-center{display:none}
 }
 @media(prefers-reduced-motion:reduce){.landing-cta{transition:none}}
+
+
+/* Native-like interaction: prevent accidental text selection and browser tap flashes. */
+html, body, #__next, .landing-screen, .app-shell,
+.landing-screen *, .app-shell * {
+  -webkit-tap-highlight-color: transparent;
+}
+.landing-screen, .app-shell, .landing-screen *, .app-shell * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+.landing-screen button, .app-shell button, .landing-screen a, .app-shell a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background-color .16s ease, color .16s ease, border-color .16s ease, transform .16s ease, opacity .16s ease;
+}
+.landing-screen button:active, .app-shell button:active {
+  transform: scale(.97);
+}
+.landing-screen button:focus:not(:focus-visible), .app-shell button:focus:not(:focus-visible) {
+  outline: none;
+}
+.landing-screen button:focus-visible, .app-shell button:focus-visible,
+.landing-screen a:focus-visible, .app-shell a:focus-visible {
+  outline: 2px solid #ffd600;
+  outline-offset: 3px;
+}
+/* Keep form fields selectable/editable so phone numbers and OTP can be corrected/copied. */
+.landing-screen input, .app-shell input, .landing-screen textarea, .app-shell textarea,
+.landing-screen [contenteditable="true"], .app-shell [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-screen button, .app-shell button, .landing-screen a, .app-shell a {
+    transition: none;
+  }
+}
